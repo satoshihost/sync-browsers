@@ -395,7 +395,9 @@ Goal: help each browser install the extensions the user's other browsers have, w
 - **Page:** a full extension page (e.g. `extensions.html`, opened in a tab from the popup) rather than the popup, so it has room and stays open. It lists extensions present in any other browser entry but not installed here (`chrome.management.getAll()`), each with an **Install** link `https://chromewebstore.google.com/detail/<id>`. When one is installed it drops off the list. Brave and other Chromium browsers use the same store links.
 - **Ignore:** a per-item Ignore button, stored locally per browser, hides extensions deliberately not wanted here; a "Show ignored" toggle undoes it.
 - **Limits:** unpacked or sideloaded extensions (`installType` `development` / `sideload`, including Sync Browsers itself) have no store page, so they are listed without a link, or hidden. The extension never installs or removes anything itself.
-- **Open questions:** whether the Web Viewer at sync.satoshihost.com should show the same list (read-only, no install detection); whether to sync enabled/disabled state (probably not). Check before building that older extension versions ignore an extra field in the payload and don't drop it when they upload.
+- **Not in the Web Viewer:** decided against; it can't tell which browser you're in, and the full list isn't useful there.
+- **Mixed versions:** uploads replace the whole payload with a bookmarks-only copy, so a browser still on an older version would wipe everyone's extension lists on its next upload (bookmarks unaffected). Updated browsers re-add their own entry on their next sync, so it self-heals. Plan: update all browsers together rather than adding a separate store.
+- **Open question:** whether to sync enabled/disabled state (probably not).
 
 ## Compatibility Notes
 

@@ -147,6 +147,7 @@ extension/
 2. Run `tools/package_extension.sh` to rebuild `www/downloads/full-browser-sync.zip` (it leaves out `config.local.js`, which holds the passphrase; zips are git-ignored).
 3. In `www/index.html`, update the version on the Server & Extension tab's Download link and add a Changelog entry.
 4. With approval, deploy the site: on DR1, back up `/opt/bookmarksync/www/index.html` as `index.html.bak-<date>`, copy the page and `downloads/full-browser-sync.zip` up as `.new` files and `mv` them into place. Caddy serves them directly; no restart is needed.
+5. Commit and push, then create a GitHub release with the same zip and the changelog text as notes: `gh release create v<version> www/downloads/full-browser-sync.zip --target main --title "Full Browser Sync <version>" --notes-file <notes.md>`.
 
 If the Firefox port is ever revived, the relevant differences: Firefox MV3 uses `"background": { "scripts": [...] }` instead of a service worker, and root folders map as Chrome `"Bookmarks bar"` ↔ Firefox `"Bookmarks Toolbar"`, `"Other bookmarks"` ↔ `"Other Bookmarks"`, with Firefox `"Bookmarks Menu"` falling back to a sensible destination.
 

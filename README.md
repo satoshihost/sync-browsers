@@ -186,7 +186,7 @@ The server exposes a minimal REST API:
 **Rate limits:** Max 1 PUT per sync ID per 5 seconds  
 **Max body size:** 2MB
 
-A **Sync ID** may be a random UUID v4 or a custom 3–64 character name (letters, digits, hyphen, underscore) — this is what makes memorable IDs like `andy` possible. The static [Web Viewer](#web-viewer) and guide are served at `/`.
+A **Sync ID** may be a random UUID v4 or a custom 3–56 character name (letters, digits, hyphen, underscore) — this is what makes memorable IDs like `andy` possible. The server accepts up to 64, but planned extras are stored under the Sync ID plus a short ending (e.g. `-ext`), so keep custom IDs to 56 to leave room. The static [Web Viewer](#web-viewer) and guide are served at `/`.
 
 See [PROJECT.md](PROJECT.md) for detailed API specification and encryption details.
 

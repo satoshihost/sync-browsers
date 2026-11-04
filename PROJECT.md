@@ -162,7 +162,7 @@ GET    /status            Server health check
                           Response: { "status": "online", "version": "1.0.1", "maxSyncSize": 2097152 }
 ```
 
-No authentication beyond the Sync ID itself. A Sync ID may be a random UUID v4 generated client-side, or a custom 3–64 character name (`[A-Za-z0-9_-]`) — so memorable IDs like `andy` are allowed, which means a guessable ID relies on a strong passphrase. The server never links an ID to a user and never receives the passphrase.
+No authentication beyond the Sync ID itself. A Sync ID may be a random UUID v4 generated client-side, or a custom 3–64 character name (`[A-Za-z0-9_-]`; user docs say 56 to leave room for `-<type>` endings such as `-ext`) — so memorable IDs like `andy` are allowed, which means a guessable ID relies on a strong passphrase. The server never links an ID to a user and never receives the passphrase.
 
 ### Rate Limiting
 
@@ -399,7 +399,7 @@ Goal: help each browser install the extensions the user's other browsers have, w
 - **Limits:** unpacked or sideloaded extensions (`installType` `development` / `sideload`, including Sync Browsers itself) have no store page, so they are listed without a link, or hidden. The extension never installs or removes anything itself.
 - **Not in the Web Viewer:** decided against; it can't tell which browser you're in, and the full list isn't useful there.
 - **Why a separate file (decided):** bookmark uploads replace the whole bookmarks payload, so lists stored inside it would be wiped by any browser on an older version or with the feature off. Bookmarks are one shared truth; extension lists differ per browser, so they are kept apart. Any future sync type (e.g. open tabs) should get its own `<syncId>-<type>` file the same way.
-- **ID length:** custom Sync IDs can be up to 64 chars, and adding `-ext` could exceed the server limit. Disable the feature with a message for IDs over 60 chars (generated UUIDs are 36).
+- **ID length:** the server allows 64 chars, and the docs tell users to keep custom Sync IDs to 56, leaving 8 for endings like `-ext` or `-tabs`. For an existing ID that is too long for its ending, disable that feature with a message (generated UUIDs are 36).
 - **Open question:** whether to sync enabled/disabled state (probably not).
 
 ## Compatibility Notes

@@ -386,6 +386,17 @@ Assessed 2026-11 against the Chromium extension APIs (from API knowledge, not pr
 
 This is why the product was renamed from "Full Browser Sync" to "Sync Browsers" in 1.0.4: realistically it is bookmarks plus, perhaps, open tabs and an extensions checklist.
 
+### Design note: "Missing extensions" page (not started)
+
+Goal: help each browser install the extensions the user's other browsers have, without cluttered device tables.
+
+- **Opt-in setting**, because it needs the `management` permission (Chrome shows a warning for it). Request it with `chrome.permissions.request` from an optional permission, so bookmark-only users are unaffected.
+- **Data:** each browser keeps a random browser ID in local storage and writes `{ browserId, updated, extensions: [{ id, name, homepageUrl, installType }] }` into the encrypted sync payload, replacing only its own entry. The server is unchanged and still learns nothing; there are no device names to set up. Drop entries not updated for a long time (e.g. 90 days) so old browsers fade out.
+- **Page:** a full extension page (e.g. `extensions.html`, opened in a tab from the popup) rather than the popup, so it has room and stays open. It lists extensions present in any other browser entry but not installed here (`chrome.management.getAll()`), each with an **Install** link `https://chromewebstore.google.com/detail/<id>`. When one is installed it drops off the list. Brave and other Chromium browsers use the same store links.
+- **Ignore:** a per-item Ignore button, stored locally per browser, hides extensions deliberately not wanted here; a "Show ignored" toggle undoes it.
+- **Limits:** unpacked or sideloaded extensions (`installType` `development` / `sideload`, including Sync Browsers itself) have no store page, so they are listed without a link, or hidden. The extension never installs or removes anything itself.
+- **Open questions:** whether the Web Viewer at sync.satoshihost.com should show the same list (read-only, no install detection); whether to sync enabled/disabled state (probably not). Check before building that older extension versions ignore an extra field in the payload and don't drop it when they upload.
+
 ## Compatibility Notes
 
 - **Chrome**: MV3 required. Service workers supported since Chrome 88.

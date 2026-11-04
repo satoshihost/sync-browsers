@@ -570,7 +570,15 @@
             <div class="card">
                 <h2>📝 Changelog</h2>
                 <div class="info-section">
-                    <h3>1.0.2 <span class="feature-badge">Latest</span></h3>
+                    <h3>1.0.3 <span class="feature-badge">Latest</span></h3>
+                    <ul>
+                        <li><strong>Edits made while the extension was off now sync:</strong> after each sync the extension keeps a copy of your bookmarks, and when it starts up it compares against that copy, so bookmarks added while it was disabled are uploaded.</li>
+                        <li><strong>Both-ways merge:</strong> if this browser and another one both changed bookmarks, they are merged instead of stopping with an error. Additions from both sides are kept and deletions from either side are applied.</li>
+                        <li>If the same bookmark (same URL) was renamed or moved differently on both sides, the server copy wins. If one side deleted it and the other edited it, the edited copy is kept.</li>
+                    </ul>
+                </div>
+                <div class="info-section">
+                    <h3>1.0.2</h3>
                     <ul>
                         <li>Popup footer link renamed to <strong>Web Viewer</strong> (was "Server Status") so this page is easy to find.</li>
                         <li>Web Viewer usage documented.</li>

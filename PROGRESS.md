@@ -86,7 +86,7 @@ Core sync loop confirmed working across 3 browsers. Remaining:
 ## 📋 TODO (Post-MVP)
 
 ### Security
-- [ ] **Passphrase stored in plaintext** — the extension keeps the sync passphrase unencrypted in `chrome.storage.local` (readable in each profile's `Local Extension Settings/<extension id>/` LevelDB files by anything running as the user). Decide whether to keep only a derived key, or prompt once per browser session, and document the trade-off.
+- [x] **Passphrase stored in plaintext — decided: accepted risk, no change.** The extension keeps the sync passphrase unencrypted in `chrome.storage.local` (readable in each profile's `Local Extension Settings/<extension id>/` LevelDB files by anything running as the user). Anything that can read it can already read the browser's own plaintext `Bookmarks` file. Storing only a derived key would still let a thief read or overwrite the server copy, and prompting each browser session would stop background sync. Extensions can't reach the OS keyring without a native-messaging helper, which is not worth the setup cost for bookmarks. The only extra risk is passphrase reuse, so the User Guide advises a passphrase not used elsewhere.
 
 ### Polish
 - [ ] Better error messages

@@ -314,6 +314,8 @@ async function requestSync(direction) {
         } else if (result.action === 'downloaded') {
             // Downloads use the revision attached to the actual snapshot.
             showNotification(`Downloaded from server (Rev ${result.rev})`);
+        } else if (result.action === 'merged') {
+            showNotification(`Merged with server copy (Rev ${result.rev})`);
         } else if (result.action === 'unchanged') {
             showNotification(`Already up to date (Rev ${result.rev})`, 'info');
         }

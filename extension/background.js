@@ -1,6 +1,6 @@
 // Background service worker for Full Browser Sync
 if (typeof importScripts === 'function') {
-    importScripts('lib/crypto.js', 'lib/sync.js', 'lib/bookmarks.js');
+    importScripts('lib/crypto.js', 'lib/sync.js', 'lib/bookmarks.js', 'lib/merge.js');
 }
 
 // Guard against concurrent syncs and against events fired by restore operations
@@ -9,6 +9,7 @@ let stateQueue = Promise.resolve();
 let alarmQueue = Promise.resolve();
 let restoring = false;
 let changeVersion = 0;
+let offlineCheckDone = false;
 let syncDebounceTimer = null;
 
 function saveState(values) {
@@ -129,7 +130,7 @@ async function runSync(reason, options) {
             }
             const old = await chrome.storage.local.get(['serverUrl', 'syncId', 'passphrase']);
             if (old.serverUrl !== serverUrl || old.syncId !== syncId || old.passphrase !== passphrase) {
-                await chrome.storage.local.remove(['lastSyncRev', 'syncDataVersion', 'lastSync']);
+                await chrome.storage.local.remove(['lastSyncRev', 'syncDataVersion', 'lastSync', 'syncBase']);
             }
             await saveState({ serverUrl, syncId, passphrase, syncMode: 'Server' });
         }
@@ -138,7 +139,7 @@ async function runSync(reason, options) {
         const startVersion = changeVersion;
         const settings = await chrome.storage.local.get([
             'serverUrl', 'syncId', 'passphrase', 'lastSyncRev', 'localDirty',
-            'plaintextMode', 'syncDataVersion', 'restorePending'
+            'plaintextMode', 'syncDataVersion', 'restorePending', 'syncBase'
         ]);
         if (direction === 'restore') {
             await applyRestore(options.bookmarks, settings.restorePending, startVersion, { localDirty: true });
@@ -157,6 +158,11 @@ async function runSync(reason, options) {
             // The user must do the first sync manually via the popup to choose direction.
             return { action: 'choose' };
         }
+        // Edits made while the extension was disabled fire no bookmark events.
+        if (direction === 'auto' && !settings.localDirty && await localChangedSinceSync(settings)) {
+            settings.localDirty = true;
+            await saveState({ localDirty: true });
+        }
 
         const serverUrl = settings.serverUrl || 'https://sync.satoshihost.com';
         console.log(`Sync triggered by: ${reason}`);
@@ -172,19 +178,22 @@ async function runSync(reason, options) {
             action = 'uploaded';
         } else if (!info) {
             throw new Error('The server copy is missing. Choose an explicit upload to recreate it.');
-        } else if (settings.localDirty) {
-            // Local changes may be uploaded only against the revision they were based on.
+        } else if (settings.syncBase && !settings.localDirty) {
             if (info.rev !== settings.lastSyncRev) {
-                throw new Error('Both this browser and the server changed. Export a backup, then choose Upload or Download explicitly.');
+                // Server revision differs from what we last synced — download it.
+                rev = await performDownload(serverUrl, settings, startVersion);
+                action = 'downloaded';
+            } else {
+                action = 'unchanged';
             }
+        } else if (settings.syncBase && info.rev === settings.lastSyncRev) {
+            // Local changes may be uploaded only against the revision they were based on.
             rev = await performUpload(serverUrl, settings, settings.lastSyncRev);
             action = 'uploaded';
-        } else if (info.rev !== settings.lastSyncRev) {
-            // Server revision differs from what we last synced — download it.
-            rev = await performDownload(serverUrl, settings, startVersion);
-            action = 'downloaded';
         } else {
-            action = 'unchanged';
+            // Both sides changed, or this browser has no merge base yet.
+            rev = await performMerge(serverUrl, settings, startVersion);
+            action = 'merged';
         }
         await saveState({ lastSync: new Date().toISOString(), lastSyncError: null, lastSyncResult: action });
         console.log(`Sync: ${action} (Rev ${rev})`);
@@ -196,9 +205,15 @@ async function runSync(reason, options) {
     }
 }
 
-async function performUpload(serverUrl, settings, expectedRev) {
-    const capturedVersion = changeVersion;
-    const bookmarks = await chrome.bookmarks.getTree();
+async function localChangedSinceSync(settings) {
+    if (offlineCheckDone || !settings.syncBase) return false;
+    offlineCheckDone = true;
+    return !sameSnapshot(flattenTree(await chrome.bookmarks.getTree()), settings.syncBase);
+}
+
+async function performUpload(serverUrl, settings, expectedRev, { bookmarks, sinceVersion } = {}) {
+    const capturedVersion = sinceVersion ?? changeVersion;
+    if (!bookmarks) bookmarks = await chrome.bookmarks.getTree();
     const data = { version: 1, created: new Date().toISOString(), bookmarks };
     const encrypted = await encrypt(settings.passphrase, JSON.stringify(data), settings.plaintextMode);
     const result = await uploadBlob(serverUrl, settings.syncId, encrypted, expectedRev);
@@ -206,12 +221,13 @@ async function performUpload(serverUrl, settings, expectedRev) {
     await saveState(() => ({
         lastSyncRev: result.rev,
         syncDataVersion: 2,
-        localDirty: changeVersion !== capturedVersion
+        localDirty: changeVersion !== capturedVersion,
+        syncBase: flattenTree(bookmarks)
     }));
     return result.rev;
 }
 
-async function performDownload(serverUrl, settings, startVersion) {
+async function fetchServerCopy(serverUrl, settings) {
     const result = await downloadBlob(serverUrl, settings.syncId);
     if (!result) throw new Error('No data on server');
     validateRevision(result.rev);
@@ -220,11 +236,37 @@ async function performDownload(serverUrl, settings, startVersion) {
     if (!data || data.version !== 1 || !Array.isArray(data.bookmarks)) {
         throw new Error('Invalid bookmark data from server');
     }
+    return { bookmarks: data.bookmarks, rev: result.rev };
+}
+
+async function performDownload(serverUrl, settings, startVersion) {
+    const remote = await fetchServerCopy(serverUrl, settings);
     // Store the revision attached to the downloaded snapshot, never the earlier /info result.
-    await applyRestore(data.bookmarks, settings.restorePending, startVersion, {
-        lastSyncRev: result.rev, syncDataVersion: 2, localDirty: false
+    await applyRestore(remote.bookmarks, settings.restorePending, startVersion, {
+        lastSyncRev: remote.rev, syncDataVersion: 2, localDirty: false
     });
-    return result.rev;
+    await saveState({ syncBase: flattenTree(await chrome.bookmarks.getTree()) });
+    return remote.rev;
+}
+
+async function performMerge(serverUrl, settings, startVersion) {
+    const remote = await fetchServerCopy(serverUrl, settings);
+    const merged = mergeTrees(settings.syncBase, await chrome.bookmarks.getTree(), remote.bookmarks);
+    if (merged.localChanged) {
+        await applyRestore(merged.tree, settings.restorePending, startVersion, {});
+    } else if (changeVersion !== startVersion) {
+        throw new Error('Bookmarks changed while merging; keeping local edits. Try syncing again.');
+    }
+    if (merged.remoteChanged) {
+        return performUpload(serverUrl, settings, remote.rev, { bookmarks: merged.tree, sinceVersion: startVersion });
+    }
+    await saveState(() => ({
+        lastSyncRev: remote.rev,
+        syncDataVersion: 2,
+        localDirty: changeVersion !== startVersion,
+        syncBase: merged.snapshot
+    }));
+    return remote.rev;
 }
 
 async function applyRestore(bookmarks, preserveSafetyBackup, startVersion, completedState) {

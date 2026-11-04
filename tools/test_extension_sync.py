@@ -12,7 +12,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 SOURCES = {
     extension: {
         name: (ROOT / extension / name).read_text()
-        for name in ('background.js', 'lib/sync.js', 'lib/bookmarks.js', 'popup/popup.js', 'popup/popup.html')
+        for name in ('background.js', 'lib/sync.js', 'lib/bookmarks.js', 'lib/merge.js', 'popup/popup.js', 'popup/popup.html')
     }
     for extension in ('extension',)
 }
@@ -34,7 +34,8 @@ async function test(name, fn) {
 }
 function environment(source, initial = {}, hooks = {}) {
     const state = { serverUrl: 'https://example.com', syncId: 'test-sync', passphrase: 'test-only',
-        lastSyncRev: 1, syncDataVersion: 2, localDirty: false, syncInterval: 1, ...initial };
+        lastSyncRev: 1, syncDataVersion: 2, localDirty: false, syncInterval: 1,
+        syncBase: { roots: [], entries: {} }, ...initial };
     const alarms = new Map();
     const event = () => ({ handlers: [], addListener(fn) { this.handlers.push(fn); } });
     const calls = { uploads: 0, downloads: 0, restores: 0, infos: 0, active: 0, maxActive: 0 };
@@ -52,7 +53,7 @@ function environment(source, initial = {}, hooks = {}) {
             clear: async name => alarms.delete(name)
         },
         bookmarks: { onCreated: event(), onRemoved: event(), onChanged: event(), onMoved: event(),
-            getTree: async () => [{ id: '0', children: [] }]
+            getTree: async () => hooks.tree ? hooks.tree() : [{ id: '0', children: [] }]
         }
     };
     let serverRev = 2;
@@ -71,15 +72,15 @@ function environment(source, initial = {}, hooks = {}) {
         return { rev: ++serverRev };
     };
     const restore = async (tree, options) => {
-        calls.restores++; calls.restoreOptions = options;
+        calls.restores++; calls.restoreOptions = options; calls.restoredTree = tree;
         chrome.bookmarks.onCreated.handlers.forEach(fn => fn());
         if (hooks.restore) await hooks.restore();
     };
     const validate = rev => { if (!Number.isSafeInteger(rev) || rev < 0) throw new Error('Invalid revision'); };
     const api = new Function('chrome', 'console', 'getInfo', 'downloadBlob', 'uploadBlob', 'encrypt', 'decrypt', 'restoreBookmarks', 'validateRevision', 'setTimeout', 'clearTimeout',
-        source + '\nreturn { performSync, onBookmarkChange, ensureSyncAlarm };')(
-        chrome, quiet, getInfo, download, upload, async () => new Uint8Array(),
-        async () => JSON.stringify({ version: 1, bookmarks: [{ children: [] }] }), restore, validate, () => 1, () => {}
+        sources.extension['lib/merge.js'] + '\n' + source + '\nreturn { performSync, onBookmarkChange, ensureSyncAlarm };')(
+        chrome, quiet, getInfo, download, upload, async (p, text) => { calls.uploaded = JSON.parse(text); return new Uint8Array(); },
+        async () => JSON.stringify({ version: 1, bookmarks: hooks.serverTree ? hooks.serverTree() : [{ children: [] }] }), restore, validate, () => 1, () => {}
     );
     const message = msg => new Promise(resolve => {
         chrome.runtime.onMessage.handlers[0](msg, { id: chrome.runtime.id }, resolve);
@@ -145,10 +146,50 @@ async function runSuite(label, source) {
         await e.performSync('manual', { direction: 'download' });
         assert(e.state.syncDataVersion === 2 && e.state.lastSyncRev === 2, 'Migration not completed');
     });
-    await test(label + ': conflict keeps both copies untouched', async () => {
-        const e = environment(source['background.js'], { localDirty: true });
-        await rejects(() => e.performSync(), 'Both');
-        assert(!e.calls.uploads && !e.calls.downloads && e.state.localDirty, 'Conflict overwrote data');
+    const merge = new Function(source['lib/merge.js'] + '\nreturn { flattenTree, mergeTrees };')();
+    const T = (...roots) => [{ children: roots.map((children, i) => ({ title: ['Bookmarks bar', 'Other bookmarks'][i], children })) }];
+    const bm = (title, url) => ({ title, url });
+    const fd = (title, ...children) => ({ title, children });
+    const urls = tree => Object.values(merge.flattenTree(tree).entries).filter(e => e.url).map(e => e.title + '@' + e.url).sort().join(',');
+    const base = T([bm('A', 'https://a')]);
+    const local = T([bm('A', 'https://a'), bm('Cline', 'https://c')]);
+    const server = T([bm('A', 'https://a'), bm('Server', 'https://s')]);
+    await test(label + ': edit made while extension was disabled is detected and uploaded', async () => {
+        const e = environment(source['background.js'], { syncBase: merge.flattenTree(base) }, { tree: () => local, info: async () => ({ rev: 1 }) });
+        const result = await e.performSync();
+        assert(result.action === 'uploaded' && e.calls.expectedRev === 1 && !e.state.localDirty, 'Offline edit not uploaded');
+        assert(urls(e.calls.uploaded.bookmarks) === urls(local), 'Wrong tree uploaded');
+    });
+    await test(label + ': both sides changed are merged both ways', async () => {
+        const e = environment(source['background.js'], { syncBase: merge.flattenTree(base), localDirty: true }, { tree: () => local, serverTree: () => server });
+        const result = await e.performSync();
+        const expected = 'A@https://a,Cline@https://c,Server@https://s';
+        assert(result.action === 'merged' && urls(e.calls.restoredTree) === expected && urls(e.calls.uploaded.bookmarks) === expected, 'Merge lost a side');
+        assert(e.calls.expectedRev === 2 && e.state.lastSyncRev === 3 && !e.state.localDirty, 'Merge revision state wrong');
+    });
+    await test(label + ': browser without a merge base keeps both copies', async () => {
+        const e = environment(source['background.js'], { syncBase: undefined }, { tree: () => local, serverTree: () => server });
+        const result = await e.performSync();
+        assert(result.action === 'merged' && urls(e.calls.uploaded.bookmarks) === 'A@https://a,Cline@https://c,Server@https://s', 'Migration merge lost bookmarks');
+        assert(e.state.syncBase && Object.keys(e.state.syncBase.entries).length === 3, 'Merge base not saved');
+    });
+    await test(label + ': same-URL clash keeps server copy, edits beat deletes', async () => {
+        const b = T([fd('F', bm('X', 'https://x')), bm('Y', 'https://y'), bm('Z', 'https://z')]);
+        const l = T([fd('F', bm('X-local', 'https://x')), bm('Y', 'https://y')]);
+        const r = T([fd('F', bm('X-server', 'https://x')), bm('Z2', 'https://z')]);
+        const m = merge.mergeTrees(merge.flattenTree(b), l, r);
+        assert(urls(m.tree) === 'X-server@https://x,Z2@https://z', 'Merge rules wrong: ' + urls(m.tree));
+    });
+    await test(label + ': bookmark added to a folder deleted elsewhere keeps the folder', async () => {
+        const b = T([fd('F', bm('X', 'https://x'))]);
+        const l = T([fd('F', bm('X', 'https://x'), bm('N', 'https://n'))]);
+        const m = merge.mergeTrees(merge.flattenTree(b), l, T([]));
+        const folder = m.tree[0].children[0].children[0];
+        assert(folder && folder.title === 'F' && urls(m.tree) === 'N@https://n', 'New bookmark lost with folder');
+    });
+    await test(label + ': unchanged trees need no restore or upload', async () => {
+        const m = merge.mergeTrees(undefined, local, local);
+        assert(!m.localChanged && !m.remoteChanged, 'Identical copies reported as changed');
     });
     await test(label + ': forced download recreates alarm', async () => {
         const e = environment(source['background.js']); await tick(); e.alarms.clear();

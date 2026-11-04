@@ -85,6 +85,9 @@ Core sync loop confirmed working across 3 browsers. Remaining:
 
 ## 📋 TODO (Post-MVP)
 
+### Security
+- [ ] **Passphrase stored in plaintext** — the extension keeps the sync passphrase unencrypted in `chrome.storage.local` (readable in each profile's `Local Extension Settings/<extension id>/` LevelDB files by anything running as the user). Decide whether to keep only a derived key, or prompt once per browser session, and document the trade-off.
+
 ### Polish
 - [ ] Better error messages
 - [ ] Progress indicators during sync
@@ -110,6 +113,7 @@ Core sync loop confirmed working across 3 browsers. Remaining:
 - [x] Manual bookmark backup/export and full-replacement import
 - [x] Sync on bookmark change
 - [ ] Multiple sync profiles
+- [x] Automatic three-way merge when two browsers changed bookmarks (1.0.3; server copy wins a same-URL clash)
 - [ ] Bookmark conflict resolution UI
 
 ---

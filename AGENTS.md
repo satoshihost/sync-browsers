@@ -101,9 +101,10 @@ changes by comparing blob bytes.
 Every `PUT /sync/{id}` increments `rev` by 1 and returns `{ "rev": newRev }`.
 The `/sync/{id}/info` endpoint returns `{ "rev": currentRev }`.
 
-Each browser stores `lastSyncRev`, `localDirty`, and `syncDataVersion` in local storage.
+Each browser stores `lastSyncRev`, `localDirty`, `syncDataVersion`, and `syncBase` (a flattened copy of the bookmarks as of the last successful sync, built by `lib/merge.js`) in local storage.
 - A new browser or one without `syncDataVersion: 2` must explicitly choose an initial upload or download. Old saved revisions may describe stale cached content.
-- If both the local bookmarks and the server revision changed, stop and ask the user to resolve the conflict; do not silently overwrite either copy.
+- Once per worker start, the first automatic check compares the live tree with `syncBase`. A difference marks the browser dirty, so edits made while the extension was disabled still upload (bookmark events are not delivered to a disabled extension).
+- If both the local bookmarks and the server revision changed, or the browser has no `syncBase` yet, run a three-way merge against `syncBase`: keep additions from both sides, apply deletions from either side, and upload the result with `X-Expected-Rev` set to the downloaded revision. Bookmarks are matched by URL. When both sides changed the same URL (title or folder), the server copy wins; an edit beats a delete. A folder deleted on one side is recreated if it still holds kept entries. With no `syncBase`, nothing is deleted (union). Renames and moves are matched as edits only for bookmarks; a renamed folder is a delete plus an add.
 - If only local bookmarks changed, upload with `X-Expected-Rev` set to their base revision. A concurrent server change produces HTTP 409.
 - If only the server revision changed, download with `cache: 'no-store'` and record the `X-Sync-Rev` header attached to that exact response, never the earlier `/info` revision.
 - If neither changed, report unchanged without rewriting bookmarks.
@@ -112,7 +113,7 @@ All sync fetches bypass HTTP caches and have a 20-second timeout. Server API res
 
 One worker queue handles alarms, Sync Now, explicit directions, local imports, and reset. The popup never performs network sync or bookmark restoration itself. Missing polling alarms are restored at worker startup, browser startup, and configuration changes. Bookmark edits during network work remain dirty, including edits made after an upload snapshot was taken. Retries use alarms, not just in-memory timers.
 
-During full-tree restoration, bookmark events are suppressed. Avoid editing bookmarks while a restore is running. `restorePending` is persisted before modification; failed/interrupted restores do not advance the revision and cannot upload a partial tree. Recovery preserves the pre-restore safety backup. Bookmark API and backup errors must propagate, not be logged as successful restores. This is snapshot replacement, not a per-bookmark merge system.
+During full-tree restoration, bookmark events are suppressed. Avoid editing bookmarks while a restore is running. `restorePending` is persisted before modification; failed/interrupted restores do not advance the revision and cannot upload a partial tree. Recovery preserves the pre-restore safety backup. Bookmark API and backup errors must propagate, not be logged as successful restores. Downloads and merges apply the result by full-tree replacement (with the safety backup), not individual bookmark edits.
 
 ---
 
@@ -125,6 +126,7 @@ extension/
     crypto.js         — AES-256-GCM encrypt/decrypt, PBKDF2 key derivation, hashContent()
     sync.js           — fetch wrappers: uploadBlob, downloadBlob, getInfo, checkServerStatus
     bookmarks.js      — Chrome bookmarks API helpers: restoreBookmarks, countBookmarks
+    merge.js          — flattenTree / mergeTrees: offline-edit detection and three-way merge
   popup/
     popup.js          — manual Sync Now UI, settings, local backup export/import
     popup.html
@@ -145,7 +147,7 @@ If the Firefox port is ever revived, the relevant differences: Firefox MV3 uses 
 
 ## Browser resource usage
 
-Idle checks fetch only revision metadata, without reading the bookmark tree or running crypto. The default interval is 10 minutes; 1 minute is supported for testing. HTTP/TLS overhead is additional to the small JSON body. Retry and debounced-change alarms can add checks.
+Idle checks fetch only revision metadata, without running crypto. The bookmark tree is read once per worker start for the offline-edit check (about 30 ms for ~1,100 bookmarks in a headless test); `syncBase` is roughly 300 KB for that collection. The default interval is 10 minutes; 1 minute is supported for testing. HTTP/TLS overhead is additional to the small JSON body. Retry and debounced-change alarms can add checks.
 
 Uploads read and encrypt the full tree. Downloads decrypt and restore the full tree with individual bookmark API calls, so large collections may take meaningful CPU time and allocations. PBKDF2 uses 100,000 iterations. No reliable per-device CPU/RAM benchmark has been recorded; do not claim zero resource usage or a fixed daily CPU budget.
 

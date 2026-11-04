@@ -493,10 +493,9 @@
                 <div class="info-section">
                     <h3>Multi-Browser Support & Data Protection</h3>
                     <p>
-                        Full Browser Sync supports syncing seamlessly across Chromium browsers (Chrome, Brave, Edge) and Firefox, with automated data loss prevention safeguards.
+                        Full Browser Sync supports syncing seamlessly across Chromium-based browsers (Chrome, Brave, Edge, Opera, Vivaldi), with automated data loss prevention safeguards. Firefox is not supported for now: its extension development and store process are too heavy for this small project. If you are a Firefox developer who would like to make a Firefox version, get in touch on <a href="https://github.com/satoshihost/bookmarksync" target="_blank" style="color: var(--accent);">GitHub</a>.
                     </p>
                     <ul>
-                        <li><strong>Cross-Browser Root Folder Mapping:</strong> Automatically maps folder names between Chromium (<span class="code-inline">Bookmarks bar</span>, <span class="code-inline">Other bookmarks</span>) and Firefox (<span class="code-inline">Bookmarks Toolbar</span>, <span class="code-inline">Bookmarks Menu</span>).</li>
                         <li><strong>Automated Pre-Restore Local Safety Backup:</strong> Saves an automatic snapshot of your current bookmarks into local extension storage before any restore or import, with 1-click rollback UI.</li>
                         <li><strong>Pre-Restore Validation Guard:</strong> Validates payload structure and bookmark counts before touching local data, preventing empty or corrupted sync payloads from wiping local bookmarks.</li>
                     </ul>
@@ -505,8 +504,7 @@
                         <summary>⚙️ Deep Dive: Cross-Browser Compatibility & Filtering Specs</summary>
                         <div class="spec-content">
                             <ul>
-                                <li><strong>Smart Scheme Filtering:</strong> Automatically filters Firefox-internal query shortcuts (such as <span class="code-inline">place:</span> URLs) during sync so Chromium browsers never throw API rejection exceptions.</li>
-                                <li><strong>Separate Extension Packages:</strong> Independent MV3 builds for Chrome (<span class="code-inline">extension/</span> using background service workers) and Firefox (<span class="code-inline">extension-firefox/</span> using background scripts).</li>
+                                <li><strong>One Extension Package:</strong> A single Manifest V3 build (<span class="code-inline">extension/</span>, using a background service worker) for all Chromium-based browsers.</li>
                                 <li><strong>Non-Destructive Folder Merging:</strong> Preserves browser-owned root folder IDs while safely recreating nested bookmark hierarchies.</li>
                             </ul>
                         </div>

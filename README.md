@@ -37,9 +37,7 @@ This project stands on the shoulders of xBrowserSync and aims to carry its spiri
 
 **Tier 2 — Sync Server** (optional)
 - Automatic sync across devices and browsers
-- **Cross-Browser Root Folder Mapping** (Chrome `Bookmarks bar` $\leftrightarrow$ Firefox `Bookmarks Toolbar` / `Bookmarks Menu`)
 - **Pre-Restore Validation & Empty-Tree Guard** (prevents corrupt or 0-bookmark payloads from wiping local bookmarks)
-- **Smart Bookmark Filtering** (automatically filters internal Firefox `place:` URLs to prevent browser API errors in Chromium)
 - End-to-end encrypted (AES-256-GCM)
 - Server stores only ciphertext
 - Self-hostable (single Go binary)

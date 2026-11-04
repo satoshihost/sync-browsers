@@ -65,7 +65,7 @@ The server is genuinely stateless from a business logic perspective: it's a key-
 
 - No mobile app (extension only, at least to start)
 - No bookmark sharing / public links (complexity not worth it)
-- No automatic merge / conflict resolution — writes are last-write-wins, but concurrent-change conflicts are detected via the revision counter and surfaced as HTTP 409
+- No conflict-resolution UI — since 1.0.3 the extension merges concurrent changes automatically (three-way merge against its last synced copy; the server copy wins a same-URL clash), and the revision counter still rejects stale uploads with HTTP 409
 - No accounts, email, passwords on the server
 - No database
 - No server-side UI or accounts — the read-only `www/index.html` Web Viewer is a static page that decrypts in the browser

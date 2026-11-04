@@ -1,9 +1,9 @@
 #!/bin/sh
-# Build www/downloads/full-browser-sync.zip from extension/ for the site's Download section.
+# Build www/downloads/sync-browsers.zip from extension/ for the site's Download section.
 # Leaves out config.local.js (personal dev config with the sync passphrase).
 set -eu
 cd "$(dirname "$0")/.."
-out=www/downloads/full-browser-sync.zip
+out=www/downloads/sync-browsers.zip
 mkdir -p www/downloads
 rm -f "$out"
 (cd extension && zip -qr "../$out" manifest.json background.js lib popup icons -x '*.local.js' 'icons/README.md')

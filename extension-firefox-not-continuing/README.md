@@ -1,6 +1,6 @@
 # Firefox extension — discontinued
 
-There is no Firefox version of Full Browser Sync, and none is planned.
+There is no Firefox version of Sync Browsers, and none is planned.
 
 ## Why
 

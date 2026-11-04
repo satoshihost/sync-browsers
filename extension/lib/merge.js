@@ -1,4 +1,4 @@
-// Three-way bookmark merge for Full Browser Sync.
+// Three-way bookmark merge for Sync Browsers.
 // A tree is flattened into entries: bookmarks keyed by URL (plus occurrence),
 // folders by parent + title (plus occurrence). Root folders are keyed by position.
 

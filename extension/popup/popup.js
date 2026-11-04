@@ -236,7 +236,7 @@ function fileTimestamp() {
 
 function validateBookmarkBackup(data) {
     if (!data || data.version !== 1 || !Array.isArray(data.bookmarks)) {
-        throw new Error('This is not a Full Browser Sync backup file.');
+        throw new Error('This is not a Sync Browsers backup file.');
     }
     if (!data.bookmarks[0] || !Array.isArray(data.bookmarks[0].children)) {
         throw new Error('The backup does not contain a valid bookmark tree.');

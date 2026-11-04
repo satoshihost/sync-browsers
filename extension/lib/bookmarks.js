@@ -1,4 +1,4 @@
-// Bookmarks module for Full Browser Sync
+// Bookmarks module for Sync Browsers
 // Helpers for reading and writing Chrome bookmarks
 
 /**

@@ -1,6 +1,6 @@
 https://claude.ai/share/48006fe3-b8ff-478a-9bcb-f001273c623f
 
-# Full Browser Sync — Project Context
+# Sync Browsers — Project Context
 
 > This document exists to give an AI coding assistant full context on the project's goals, architecture, decisions, and rationale. Read this before touching any code.
 
@@ -221,7 +221,7 @@ www/                    # Static Web Viewer + user guide served at sync.satoshih
 ```json
 {
   "manifest_version": 3,
-  "name": "Full Browser Sync",
+  "name": "Sync Browsers",
   "version": "1.0.2",
   "description": "Privacy-first bookmark synchronization. No account, end-to-end encrypted.",
   "permissions": ["bookmarks", "storage", "alarms", "downloads"],
@@ -367,6 +367,24 @@ ssh dr1 'systemctl restart bookmarksync'
 Zero downtime deploys: the new binary is a single file copy + service restart (~100ms).
 
 ---
+
+## What Can Be Synced
+
+Assessed 2026-11 against the Chromium extension APIs (from API knowledge, not prototyped). Any new type stays an opt-in module (see AGENTS.md).
+
+| Data | Feasible? | Notes |
+|------|-----------|-------|
+| Bookmarks | Done | `chrome.bookmarks`, full read/write. |
+| Open tabs, windows, tab groups | Yes | `chrome.tabs` / `windows` / `tabGroups`: publish each browser's tabs and offer "open tabs from other browsers". Best next candidate. |
+| Installed extensions | List only | `chrome.management` can list and enable/disable, not install. Could show a checklist with store links. |
+| History | Partly, not worth it | `chrome.history.addUrl` stamps visits with the current time, so dates are lost; large and sensitive. |
+| Reading list | Chrome only | `chrome.readingList` (Chrome 120+); other Chromium browsers may lack it. |
+| Cookies / logins | Technically, avoid | `chrome.cookies` can copy them, but many logins are device-bound and it is a real security risk. |
+| Saved passwords | No | No extension API. Point users to the browser's manager or Bitwarden etc. |
+| Search engines, autofill, addresses, cards | No | No extension API. |
+| Browser settings, themes | No | Only a few privacy/content settings are exposed. |
+
+This is why the product was renamed from "Full Browser Sync" to "Sync Browsers" in 1.0.4: realistically it is bookmarks plus, perhaps, open tabs and an extensions checklist.
 
 ## Compatibility Notes
 

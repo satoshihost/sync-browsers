@@ -1,4 +1,4 @@
-# Full Browser Sync - Development Progress
+# Sync Browsers - Development Progress
 
 **Last Updated:** 2026-10-27
 
@@ -64,7 +64,7 @@
 - [x] `<all_urls>` host permission — supports self-hosted server URLs
 
 ### Repository & Documentation
-- [x] GitHub repo: github.com/satoshihost/bookmarksync
+- [x] GitHub repo: github.com/satoshihost/sync-browsers
 - [x] Professional README
 - [x] xBrowserSync tribute
 - [x] Home server deployment guide
@@ -103,7 +103,7 @@ Core sync loop confirmed working across 3 browsers. Remaining:
 
 ### Distribution
 - [ ] **Landing/home page framing** — https://sync.satoshihost.com already covers the Web Viewer, User Guide & FAQ, Server & Extension, and Changelog tabs, so it effectively doubles as the landing page. Before store submission, decide whether to present it that way (and whether the popup's GitHub link should point there instead).
-- [ ] **Chrome Web Store submission** — submit Full Browser Sync once the 1.0.2 changes have been fully tried out (Web Viewer docs, popup "Web Viewer" link, extension 1.0.2, site Changelog tab)
+- [ ] **Chrome Web Store submission** — submit Sync Browsers (renamed from Full Browser Sync in 1.0.4) once the latest changes have been fully tried out (Web Viewer docs, popup "Web Viewer" link, extension 1.0.2, site Changelog tab)
 - [x] ~~Firefox Add-ons submission~~ — abandoned (Mozilla AMO policy rejection)
 - [ ] Release binaries (Windows/Mac/Linux)
 - [ ] Docker image
@@ -220,7 +220,7 @@ cd /home/andy/work/projects/browser-sync/extension
 
 # In browser:
 # 1. Go to chrome://extensions (or opera://extensions, etc.)
-# 2. Click reload button on Full Browser Sync extension
+# 2. Click reload button on Sync Browsers extension
 ```
 
 ---
@@ -237,7 +237,7 @@ cd /home/andy/work/projects/browser-sync/extension
 
 ### Important URLs
 - Live server: https://sync.satoshihost.com
-- GitHub: https://github.com/satoshihost/bookmarksync
+- GitHub: https://github.com/satoshihost/sync-browsers
 - Server SSH: `ssh dr1` (configured in ~/.ssh/config) — DR1 (198.23.202.164)
 
 ### Key Files

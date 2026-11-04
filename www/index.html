@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Full Browser Sync — Web Viewer & Info Guide</title>
+    <title>Sync Browsers — Web Viewer & Info Guide</title>
     <style>
         :root {
             --bg: #0f172a;
@@ -413,7 +413,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>📚 Full Browser Sync</h1>
+            <h1>📚 Sync Browsers</h1>
             <p>Self-Hosted, Privacy-First Bookmark Synchronization for Chromium Browsers</p>
         </header>
 
@@ -459,7 +459,7 @@
         <!-- TAB 2: USER GUIDE & FAQ -->
         <div class="tab-content" id="tab-guide">
             <div class="card">
-                <h2>🔐 How Full Browser Sync Works</h2>
+                <h2>🔐 How Sync Browsers Works</h2>
                 <div class="info-section">
                     <h3>Zero-Knowledge End-to-End Encryption</h3>
                     <p>
@@ -493,7 +493,7 @@
                 <div class="info-section">
                     <h3>Multi-Browser Support & Data Protection</h3>
                     <p>
-                        Full Browser Sync supports syncing seamlessly across Chromium-based browsers (Chrome, Brave, Edge, Opera, Vivaldi), with automated data loss prevention safeguards. Firefox is not supported for now: its extension development and store process are too heavy for this small project. If you are a Firefox developer who would like to make a Firefox version, get in touch on <a href="https://github.com/satoshihost/bookmarksync" target="_blank" style="color: var(--accent);">GitHub</a>.
+                        Sync Browsers supports syncing seamlessly across Chromium-based browsers (Chrome, Brave, Edge, Opera, Vivaldi), with automated data loss prevention safeguards. Firefox is not supported for now: its extension development and store process are too heavy for this small project. If you are a Firefox developer who would like to make a Firefox version, get in touch on <a href="https://github.com/satoshihost/sync-browsers" target="_blank" style="color: var(--accent);">GitHub</a>.
                     </p>
                     <ul>
                         <li><strong>Automated Pre-Restore Local Safety Backup:</strong> Saves an automatic snapshot of your current bookmarks into local extension storage before any restore or import, with 1-click rollback UI.</li>
@@ -554,9 +554,9 @@
             <div class="card">
                 <h2>⬇️ Download</h2>
                 <div class="info-section">
-                    <p><a href="downloads/full-browser-sync.zip" style="color: var(--accent);"><strong>Download Full Browser Sync 1.0.3</strong></a> (zip)</p>
+                    <p><a href="downloads/sync-browsers.zip" style="color: var(--accent);"><strong>Download Sync Browsers 1.0.4</strong></a> (zip)</p>
                     <p>Unzip it to a folder you will keep (for example in your home folder). The browser loads the extension from that folder, so don't delete or move it. To update, download the new zip, unzip it over the same folder, then click the reload button on the extension in <span class="code-inline">chrome://extensions</span>.</p>
-                    <p>The source is also on <a href="https://github.com/satoshihost/bookmarksync" target="_blank" style="color: var(--accent);">GitHub</a>.</p>
+                    <p>The source is also on <a href="https://github.com/satoshihost/sync-browsers" target="_blank" style="color: var(--accent);">GitHub</a>.</p>
                 </div>
             </div>
 
@@ -564,7 +564,7 @@
                 <h2>🧩 Installing the Extension</h2>
                 <div class="info-section">
                     <h3>Supported Browsers</h3>
-                    <p>Full Browser Sync works on all Chromium-based browsers (Chrome, Brave, Edge, Opera, Vivaldi).</p>
+                    <p>Sync Browsers works on all Chromium-based browsers (Chrome, Brave, Edge, Opera, Vivaldi).</p>
                     <ul>
                         <li>1. Open <span class="code-inline">chrome://extensions</span> or <span class="code-inline">brave://extensions</span> in your browser.</li>
                         <li>2. Enable <strong>Developer mode</strong> (toggle in top right).</li>
@@ -580,7 +580,14 @@
             <div class="card">
                 <h2>📝 Changelog</h2>
                 <div class="info-section">
-                    <h3>1.0.3 <span class="feature-badge">Latest</span></h3>
+                    <h3>1.0.4 <span class="feature-badge">Latest</span></h3>
+                    <ul>
+                        <li>Renamed from <strong>Full Browser Sync</strong> to <strong>Sync Browsers</strong>. It syncs bookmarks rather than everything in the browser, so "full" promised too much. Your settings and sync data are unchanged; just reload the extension.</li>
+                        <li>The GitHub repository is now <a href="https://github.com/satoshihost/sync-browsers" target="_blank" style="color: var(--accent);">satoshihost/sync-browsers</a> (old links redirect).</li>
+                    </ul>
+                </div>
+                <div class="info-section">
+                    <h3>1.0.3</h3>
                     <ul>
                         <li><strong>Edits made while the extension was off now sync:</strong> after each sync the extension keeps a copy of your bookmarks, and when it starts up it compares against that copy, so bookmarks added while it was disabled are uploaded.</li>
                         <li><strong>Both-ways merge:</strong> if this browser and another one both changed bookmarks, they are merged instead of stopping with an error. Additions from both sides are kept and deletions from either side are applied.</li>
@@ -612,7 +619,7 @@
         </div>
 
         <footer>
-            Full Browser Sync • End-to-End Encrypted Sync • <a href="https://github.com/satoshihost/bookmarksync" target="_blank">GitHub Repository</a>
+            Sync Browsers • End-to-End Encrypted Sync • <a href="https://github.com/satoshihost/sync-browsers" target="_blank">GitHub Repository</a>
         </footer>
     </div>
 

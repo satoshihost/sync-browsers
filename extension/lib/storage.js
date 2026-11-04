@@ -1,4 +1,4 @@
-// Storage module for Full Browser Sync
+// Storage module for Sync Browsers
 // Wrapper around chrome.storage.local for settings management
 
 /**

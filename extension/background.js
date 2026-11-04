@@ -1,4 +1,4 @@
-// Background service worker for Full Browser Sync
+// Background service worker for Sync Browsers
 if (typeof importScripts === 'function') {
     importScripts('lib/crypto.js', 'lib/sync.js', 'lib/bookmarks.js', 'lib/merge.js');
 }
@@ -284,4 +284,4 @@ async function applyRestore(bookmarks, preserveSafetyBackup, startVersion, compl
 }
 
 ensureSyncAlarm().catch(console.error);
-console.log('Full Browser Sync service worker loaded');
+console.log('Sync Browsers service worker loaded');

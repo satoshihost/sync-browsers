@@ -1,4 +1,4 @@
-// Sync module for Full Browser Sync
+// Sync module for Sync Browsers
 // Core sync logic for server communication
 
 function validateRevision(rev) {

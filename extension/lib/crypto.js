@@ -1,4 +1,4 @@
-// Crypto module for Full Browser Sync
+// Crypto module for Sync Browsers
 // AES-256-GCM encryption with PBKDF2 key derivation
 
 const PBKDF2_ITERATIONS = 100000;

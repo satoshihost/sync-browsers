@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a de-duplicated Full Browser Sync backup from browser exports.
+"""Create a de-duplicated Sync Browsers backup from browser exports.
 
 The first input is preferred when the same URL appears in more than one
 source. URLs absent from it are appended from the remaining exports. Root

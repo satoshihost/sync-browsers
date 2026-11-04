@@ -1,6 +1,6 @@
-# Full Browser Sync
+# Sync Browsers
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/satoshihost/bookmarksync)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/satoshihost/sync-browsers)
 
 **Live site: [sync.satoshihost.com](https://sync.satoshihost.com/)**
 
@@ -12,7 +12,7 @@
 
 [xBrowserSync](https://www.xbrowsersync.org/) was an excellent bookmark sync solution that prioritized privacy and simplicity. Unfortunately, development ceased around 2020, and the extension was never updated to Manifest V3 (now required by Chrome). The project has been effectively abandoned since 2022.
 
-Rather than see this excellent idea fade away, Full Browser Sync is a **clean-room rewrite** that preserves the core philosophy while modernizing the implementation:
+Rather than see this excellent idea fade away, Sync Browsers is a **clean-room rewrite** that preserves the core philosophy while modernizing the implementation:
 
 - ✅ **Manifest V3** compatible (Chromium-based browsers)
 - ✅ **Modern stack** (Go server, contemporary JavaScript)
@@ -84,7 +84,7 @@ Load the `extension` directory as an unpacked extension from your browser's exte
 
 #### Local backup and transfer
 
-1. In the source browser, open **Full Browser Sync → Local backup → Export bookmarks** and choose where to save the JSON file.
+1. In the source browser, open **Sync Browsers → Local backup → Export bookmarks** and choose where to save the JSON file.
 2. Transfer that file to the other computer or browser profile, for example with Syncthing, USB, or Dropbox.
 3. In the destination browser, choose **Import bookmarks** and select the file.
 4. Confirm the replacement. The extension saves a dated `before-import-*.json` safety backup before changing anything.
@@ -104,7 +104,7 @@ Hosted server synchronisation is implemented. Once you enter a **Server URL**, *
 
 ```bash
 # Clone repository
-git clone https://github.com/satoshihost/bookmarksync.git
+git clone https://github.com/satoshihost/sync-browsers.git
 cd bookmarksync/server
 
 # Build binary
@@ -210,7 +210,7 @@ bookmarksync/
 
 ## Comparison to xBrowserSync
 
-| Feature | xBrowserSync | Full Browser Sync |
+| Feature | xBrowserSync | Sync Browsers |
 |---------|-------------|--------------|
 | Manifest Version | V2 (broken in Chrome) | V3 (modern) |
 | Server Language | Node.js + MongoDB | Go + flat files |

@@ -1,6 +1,6 @@
 // Background service worker for Sync Browsers
 if (typeof importScripts === 'function') {
-    importScripts('lib/crypto.js', 'lib/sync.js', 'lib/bookmarks.js', 'lib/merge.js');
+    importScripts('lib/crypto.js', 'lib/sync.js', 'lib/bookmarks.js', 'lib/merge.js', 'lib/extensions.js');
 }
 
 // Guard against concurrent syncs and against events fired by restore operations
@@ -11,6 +11,8 @@ let restoring = false;
 let changeVersion = 0;
 let offlineCheckDone = false;
 let syncDebounceTimer = null;
+let extensionQueue = Promise.resolve();
+let extensionDebounceTimer = null;
 
 function saveState(values) {
     const task = stateQueue.then(() => chrome.storage.local.set(
@@ -27,6 +29,7 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 chrome.runtime.onStartup.addListener(() => {
     ensureSyncAlarm().then(() => automaticSync('startup')).catch(console.error);
+    automaticExtensionSync();
 });
 chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && ['syncId', 'passphrase', 'syncInterval'].some(key => key in changes)) {
@@ -58,6 +61,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === 'autoSync' || alarm.name === 'pendingSync') {
         automaticSync(alarm.name);
     }
+    if (alarm.name === 'autoSync') automaticExtensionSync();
 });
 
 function automaticSync(reason) {
@@ -93,6 +97,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     // Local imports also run in the worker so closing the popup cannot release
     // the restore guard or upload a half-restored bookmark tree.
+    if (message.action === 'extensions' || message.action === 'extensionsRemove') {
+        const installed = Array.isArray(message.installed) ? message.installed.filter(e => e && typeof e.id === 'string') : null;
+        performExtensionSync({ remove: message.action === 'extensionsRemove', installed })
+            .then(result => sendResponse({ success: true, ...result }))
+            .catch(error => sendResponse({ success: false, error: error.message }));
+        return true;
+    }
     if (message.action === 'restore' || message.action === 'reset') {
         performSync('message', { direction: message.action, bookmarks: message.bookmarks })
             .then(result => sendResponse({ success: true, ...result }))
@@ -281,6 +292,46 @@ async function applyRestore(bookmarks, preserveSafetyBackup, startVersion, compl
     } finally {
         restoring = false;
     }
+}
+
+// ── Extension list (opt-in, separate <syncId>-ext file) ─────────────────────────
+
+function performExtensionSync(options = {}) {
+    const task = extensionQueue.then(async () => {
+        const settings = await chrome.storage.local.get(['serverUrl', 'syncId', 'passphrase', 'plaintextMode', 'extensionsSync']);
+        if (!options.remove && !settings.extensionsSync) return { enabled: false };
+        if (!settings.syncId || !settings.passphrase) {
+            throw new Error('Set up bookmark sync first (Sync ID and passphrase).');
+        }
+        // A worker started before the permission was granted can't list extensions;
+        // the page sends its own list instead, and automatic runs wait for a restart.
+        if (!options.remove && !options.installed && !canListExtensions()) return { enabled: true, file: null, waiting: true };
+        try {
+            const file = await syncExtensionList(settings, options);
+            await saveState({ extensionsError: null, extensionsChecked: new Date().toISOString() });
+            return { enabled: !options.remove, file };
+        } catch (error) {
+            await saveState({ extensionsError: error.message });
+            throw error;
+        }
+    });
+    extensionQueue = task.catch(() => {});
+    return task;
+}
+
+function automaticExtensionSync() {
+    return performExtensionSync().catch(error => console.warn('Extension list warning:', error.message));
+}
+
+function onExtensionChange() {
+    if (extensionDebounceTimer) clearTimeout(extensionDebounceTimer);
+    extensionDebounceTimer = setTimeout(automaticExtensionSync, 5000);
+}
+
+// Only present once the optional "management" permission has been granted.
+if (chrome.management && chrome.management.onInstalled) {
+    chrome.management.onInstalled.addListener(onExtensionChange);
+    chrome.management.onUninstalled.addListener(onExtensionChange);
 }
 
 ensureSyncAlarm().catch(console.error);

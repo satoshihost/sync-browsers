@@ -1,13 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Sync Browsers",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Privacy-first bookmark synchronization. No account, end-to-end encrypted.",
   "permissions": [
     "bookmarks",
     "storage",
     "alarms",
     "downloads"
+  ],
+  "optional_permissions": [
+    "management"
   ],
   "host_permissions": [
     "<all_urls>"

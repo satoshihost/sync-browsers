@@ -20,6 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('forceUploadBtn').addEventListener('click', forceUpload);
     document.getElementById('firstSyncDownloadBtn').addEventListener('click', () => firstSync('download'));
     document.getElementById('firstSyncUploadBtn').addEventListener('click', () => firstSync('upload'));
+    document.getElementById('openExtensionsBtn').addEventListener('click', () => {
+        chrome.tabs.create({ url: chrome.runtime.getURL('pages/extensions.html') });
+        window.close();
+    });
 
     // Settings tab handlers
     document.getElementById('saveIntervalBtn').addEventListener('click', saveIntervalSettings);

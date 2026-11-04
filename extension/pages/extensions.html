@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Missing extensions - Sync Browsers</title>
+    <link rel="stylesheet" href="extensions.css">
+</head>
+<body>
+    <header>
+        <h1>🧩 Missing extensions</h1>
+        <p>Extensions your other browsers have that this browser doesn't.</p>
+    </header>
+
+    <main>
+        <div id="error" class="box error" hidden></div>
+
+        <section id="unconfigured" hidden>
+            <p>Set up bookmark sync first: open the Sync Browsers popup and enter your Sync ID and passphrase.</p>
+        </section>
+
+        <section id="off" hidden>
+            <p>To compare browsers, each browser shares its list of installed extensions (names and store IDs only), encrypted with your passphrase like your bookmarks. It is kept in a separate file from your bookmarks.</p>
+            <p>Turn this on in each browser you want to compare. Chrome will ask to let Sync Browsers <strong>manage your apps, extensions, and themes</strong>: it only reads the list and never installs, changes or removes anything.</p>
+            <button id="turnOnBtn" class="btn primary">Turn on for this browser</button>
+        </section>
+
+        <section id="on" hidden>
+            <div class="toolbar">
+                <span id="summary"></span>
+                <button id="refreshBtn" class="btn">Refresh</button>
+            </div>
+            <ul id="list"></ul>
+            <p id="empty" class="box" hidden></p>
+            <label class="toggle"><input type="checkbox" id="showIgnored"> Show ignored (<span id="ignoredCount">0</span>)</label>
+            <div class="footer">
+                <button id="turnOffBtn" class="btn">Stop sharing this browser's list</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="../lib/extensions.js"></script>
+    <script src="extensions.js"></script>
+</body>
+</html>

@@ -386,7 +386,7 @@ Assessed 2026-11 against the Chromium extension APIs (from API knowledge, not pr
 
 This is why the product was renamed from "Full Browser Sync" to "Sync Browsers" in 1.0.4: realistically it is bookmarks plus, perhaps, open tabs and an extensions checklist.
 
-### Design note: "Missing extensions" page (not started)
+### Design note: "Missing extensions" page (built in 1.0.5)
 
 Goal: help each browser install the extensions the user's other browsers have, without cluttered device tables.
 

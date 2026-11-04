@@ -554,7 +554,7 @@
             <div class="card">
                 <h2>⬇️ Download</h2>
                 <div class="info-section">
-                    <p><a href="downloads/sync-browsers.zip" style="color: var(--accent);"><strong>Download Sync Browsers 1.0.4</strong></a> (zip)</p>
+                    <p><a href="downloads/sync-browsers.zip" style="color: var(--accent);"><strong>Download Sync Browsers 1.0.5</strong></a> (zip)</p>
                     <p>Unzip it to a folder you will keep (for example in your home folder). The browser loads the extension from that folder, so don't delete or move it. To update, download the new zip, unzip it over the same folder, then click the reload button on the extension in <span class="code-inline">chrome://extensions</span>.</p>
                     <p>The source is also on <a href="https://github.com/satoshihost/sync-browsers" target="_blank" style="color: var(--accent);">GitHub</a>.</p>
                 </div>
@@ -580,7 +580,13 @@
             <div class="card">
                 <h2>📝 Changelog</h2>
                 <div class="info-section">
-                    <h3>1.0.4 <span class="feature-badge">Latest</span></h3>
+                    <h3>1.0.5 <span class="feature-badge">Latest</span></h3>
+                    <ul>
+                        <li>New <strong>Missing extensions</strong> page (button in the popup's Sync tab): lists extensions your other browsers have that this one doesn't, with an Install link to the Chrome Web Store and an Ignore button.</li>
+                        <li>Optional and off by default: turn it on in each browser you want to compare. It needs permission to read your list of extensions, and it never installs or removes anything.</li>
+                        <li>The lists are encrypted like your bookmarks and kept in a separate file, so bookmark sync is unchanged.</li>
+                    </ul>
+                    <h3>1.0.4</h3>
                     <ul>
                         <li>Renamed from <strong>Full Browser Sync</strong> to <strong>Sync Browsers</strong>. It syncs bookmarks rather than everything in the browser, so "full" promised too much. Your settings and sync data are unchanged; just reload the extension.</li>
                         <li>The GitHub repository is now <a href="https://github.com/satoshihost/sync-browsers" target="_blank" style="color: var(--accent);">satoshihost/sync-browsers</a> (old links redirect).</li>

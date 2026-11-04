@@ -71,11 +71,12 @@ async function uploadBlob(serverUrl, syncId, data, expectedRev) {
         cache: 'no-store',
         signal: AbortSignal.timeout(20000)
     });
-    if (response.status === 409) {
-        throw new Error('Another browser uploaded changes. Export a backup, then choose which copy to keep.');
-    }
     if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`);
+        const error = new Error(response.status === 409
+            ? 'Another browser uploaded changes. Export a backup, then choose which copy to keep.'
+            : `Upload failed: ${response.status}`);
+        error.status = response.status;
+        throw error;
     }
     const result = await response.json();
     validateRevision(result.rev);

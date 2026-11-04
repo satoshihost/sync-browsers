@@ -12,7 +12,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 SOURCES = {
     extension: {
         name: (ROOT / extension / name).read_text()
-        for name in ('background.js', 'lib/sync.js', 'lib/bookmarks.js', 'lib/merge.js', 'popup/popup.js', 'popup/popup.html')
+        for name in ('background.js', 'lib/sync.js', 'lib/bookmarks.js', 'lib/merge.js', 'lib/extensions.js', 'popup/popup.js', 'popup/popup.html', 'pages/extensions.js')
     }
     for extension in ('extension',)
 }
@@ -78,7 +78,7 @@ function environment(source, initial = {}, hooks = {}) {
     };
     const validate = rev => { if (!Number.isSafeInteger(rev) || rev < 0) throw new Error('Invalid revision'); };
     const api = new Function('chrome', 'console', 'getInfo', 'downloadBlob', 'uploadBlob', 'encrypt', 'decrypt', 'restoreBookmarks', 'validateRevision', 'setTimeout', 'clearTimeout',
-        sources.extension['lib/merge.js'] + '\n' + source + '\nreturn { performSync, onBookmarkChange, ensureSyncAlarm };')(
+        sources.extension['lib/merge.js'] + '\n' + sources.extension['lib/extensions.js'] + '\n' + source + '\nreturn { performSync, onBookmarkChange, ensureSyncAlarm };')(
         chrome, quiet, getInfo, download, upload, async (p, text) => { calls.uploaded = JSON.parse(text); return new Uint8Array(); },
         async () => JSON.stringify({ version: 1, bookmarks: hooks.serverTree ? hooks.serverTree() : [{ children: [] }] }), restore, validate, () => 1, () => {}
     );
@@ -278,6 +278,63 @@ async function runSuite(label, source) {
         assert(e.calls.uploads === 0 && e.calls.downloads === 1, 'Cancelled action modified data');
         await popup.syncNow(); await tick();
         assert(e.calls.downloads === 1, 'Unchanged revision restored again');
+    });
+    await test(label + ': extension list file replaces own entry and drops stale browsers', async () => {
+        const x = new Function(source['lib/extensions.js'] + '\nreturn { updateExtensionsFile, missingExtensions, storeUrl, extensionsSyncId };')();
+        const now = Date.parse('2026-11-04T12:00:00Z');
+        const old = { browsers: [
+            { browserId: 'me', updated: '2026-11-03T00:00:00Z', extensions: [{ id: 'a' }] },
+            { browserId: 'other', updated: '2026-11-01T00:00:00Z', extensions: [] },
+            { browserId: 'gone', updated: '2026-06-01T00:00:00Z', extensions: [] }] };
+        const next = x.updateExtensionsFile(old, { browserId: 'me', updated: '2026-11-04T12:00:00Z', extensions: [{ id: 'b' }] }, now);
+        assert(next.browsers.map(b => b.browserId).join() === 'other,me', 'Wrong browsers kept');
+        assert(next.browsers[1].extensions[0].id === 'b', 'Own entry not replaced');
+        const removed = x.updateExtensionsFile(old, { browserId: 'me', extensions: null }, now);
+        assert(!removed.browsers.some(b => b.browserId === 'me'), 'Own entry not removed');
+        assert(x.extensionsSyncId('a'.repeat(60)) === 'a'.repeat(60) + '-ext' && x.extensionsSyncId('a'.repeat(61)) === null, 'Bad ID length check');
+    });
+    await test(label + ': missing list skips installed and own extensions, links store installs only', async () => {
+        const x = new Function(source['lib/extensions.js'] + '\nreturn { missingExtensions, storeUrl };')();
+        const store = 'a'.repeat(32);
+        const file = { browsers: [
+            { browserId: 'me', label: 'Brave', extensions: [{ id: 'mine', name: 'Mine' }] },
+            { browserId: 'b1', label: 'Chrome', extensions: [{ id: store, name: 'Store', installType: 'normal' }, { id: 'have', name: 'Have' }] },
+            { browserId: 'b2', label: 'Chromium', extensions: [{ id: store, name: 'Store', installType: 'normal' }, { id: 'dev', name: 'Dev', installType: 'development' }] }] };
+        const missing = x.missingExtensions(file, 'me', ['have'], ['dev']);
+        assert(missing.map(e => e.id).join() === 'dev,' + store, 'Wrong missing list');
+        assert(missing[1].browsers.join() === 'Chrome,Chromium' && missing[0].ignored, 'Browsers or ignore lost');
+        assert(x.storeUrl(missing[1]).endsWith(store) && x.storeUrl(missing[0]) === null, 'Bad store links');
+    });
+    await test(label + ': extension list uses its own file and retries after a conflict', async () => {
+        const state = {};
+        const chrome = { runtime: { id: 'self' }, storage: { local: {
+            get: async key => ({ [key]: state[key] }), set: async v => Object.assign(state, v) } },
+            management: { getAll: async () => [{ id: 'self', type: 'extension', name: 'Sync' }, { id: 'x', type: 'extension', name: 'X', installType: 'normal' }, { id: 't', type: 'theme', name: 'T' }] } };
+        let server = null, rev = 0, conflicts = 1;
+        const ids = [];
+        const download = async (url, id) => { ids.push(id); return server ? { data: new TextEncoder().encode(server), rev } : null; };
+        const upload = async (url, id, data, expected) => {
+            ids.push(id);
+            if (conflicts-- > 0) { const e = new Error('conflict'); e.status = 409; throw e; }
+            assert(expected === rev, 'Wrong expected revision');
+            server = new TextDecoder().decode(data); rev++; return { rev };
+        };
+        const x = new Function('chrome', 'downloadBlob', 'uploadBlob', 'encrypt', 'decrypt', 'setTimeout',
+            source['lib/extensions.js'] + '\nreturn { syncExtensionList };')(
+            chrome, download, upload, async (p, t) => new TextEncoder().encode(t), async (p, d) => new TextDecoder().decode(d), fn => fn());
+        const file = await x.syncExtensionList({ syncId: 'abc', passphrase: 'p' });
+        assert(ids.every(id => id === 'abc-ext'), 'Touched the bookmarks file');
+        assert(rev === 1 && file.browsers.length === 1 && file.browsers[0].extensions.map(e => e.id).join() === 'x', 'Bad upload');
+        await x.syncExtensionList({ syncId: 'abc', passphrase: 'p' });
+        assert(rev === 1, 'Re-uploaded an unchanged list');
+        await x.syncExtensionList({ syncId: 'abc', passphrase: 'p' }, { remove: true });
+        assert(rev === 2 && JSON.parse(server).browsers.length === 0, 'Own entry not removed');
+    });
+    await test(label + ': extension list off by default makes no requests', async () => {
+        const e = environment(source['background.js']);
+        const result = await e.message({ action: 'extensions' });
+        assert(result.success && result.enabled === false && !e.calls.downloads && !e.calls.uploads, 'Ran while off');
+        new Function(source['pages/extensions.js']);
     });
     await test(label + ': popup delegates sync and contains no direct network/restore path', async () => {
         const code = source['popup/popup.js'];

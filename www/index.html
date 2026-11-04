@@ -607,15 +607,24 @@
     </div>
 
     <script>
-        // Tab Navigation Logic
+        // Tab Navigation Logic; #viewer, #guide, #server and #changelog link to a tab
+        function showTab(name) {
+            const btn = [...document.querySelectorAll('.tab-btn')].find(b => b.dataset.tab === name);
+            if (!btn) return;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(`tab-${name}`).classList.add('active');
+        }
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+                showTab(btn.dataset.tab);
+                history.replaceState(null, '', '#' + btn.dataset.tab);
             });
         });
+        const showHashTab = () => showTab(decodeURIComponent(location.hash.slice(1)));
+        window.addEventListener('hashchange', showHashTab);
+        showHashTab();
 
         const PBKDF2_ITERATIONS = 100000;
         const SALT = new TextEncoder().encode("bookmarksync-v1");
